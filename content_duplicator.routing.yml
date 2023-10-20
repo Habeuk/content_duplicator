@@ -1,0 +1,3 @@
+
+route_callbacks:
+  - '\Drupal\content_duplicator\Routing\ContentDuplicatorRoutes::routes'
