@@ -5,6 +5,7 @@ namespace Drupal\content_duplicator\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use PhpParser\Node\Expr\Instanceof_;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -18,6 +19,18 @@ class ContentDuplicatorController extends ControllerBase {
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;
+
+
+
+  protected $duplicable_entities_types = [
+    "paragraph",
+    "blocks_contents",
+    "block_content",
+    "node",
+    "commerce_product",
+    "webform"
+  ];
+
 
   /**
    * The controller constructor.
@@ -63,9 +76,9 @@ class ContentDuplicatorController extends ControllerBase {
     $entity = $this->entityTypeManager->getStorage('site_internet_entity')->load($site_internet_entity);
     // dd([$entity->referencedEntities()[3]->toArray(), $entity->getFieldDefinitions(), $entity->toArray()]);
     $newEntity = $this->duplicateEntity($entity);
-    // dd($entity->toArray());
+    dump($newEntity->toArray());
     // $newEntity = $entity->createDuplicate();
-    $newEntity->setName($newEntity->getName() . " Clone");
+    // $newEntity->setName($newEntity->getName() . " Clone");
     // $newEntity->enforceIsNew();
     // $newEntity->save();
 
@@ -79,45 +92,47 @@ class ContentDuplicatorController extends ControllerBase {
    * @param boolean $is_sub
    * @return boolean
    */
-  public function duplicateEntity($entity, $is_sub = false) {
+  public function duplicateEntity($entity,  $is_sub = false, $fieldsList = []) {
     $newEntity = $entity->createDuplicate();
-    // dump($class_name);
-    // $newEntity->__construct($newEntity->toArray(), $class_name);
-    $ref_entities = $entity->referencedEntities();
-    dd($ref_entities);
-    // dd($ref_entities[0]);
-    $refs_values = [];
-    // dump($ref_entities);
-    // dump($entity->getFieldsDefinitions());
-    $new_field_values = [];
-    for ($i = 0; $i < count($ref_entities); $i++) {
-      // dump([ $ref_entities[$i]->getEntityTypeId(), $ref_entities[$i]->id()]);
-      $ent_id = $ref_entities[$i]->getEntityTypeId();
-      if ($ent_id != "user") {
-        $fields_names =  $this->getFieldKey($entity->toArray(), $ref_entities[$i]->id());
-        foreach ($fields_names as $name) {
-          $field_entity_id = $entity->get($name)->getFieldDefinition()->getItemDefinition()->toArray()["settings"]["target_type"];
-          if ($field_entity_id == $ref_entities[$i]->getEntityTypeId()) {
-            $new_id = $this->duplicateEntity($ref_entities[$i], true);
-            // $new_id = 3;
-            if (isset($refs_values[$name])) {
-              $refs_values[$name][] = $new_id;
-            } else {
-              $refs_values[$name] = [$new_id];
-            }
-            break;
-          }
-        }
-        // dump($newEntity->get($field_name[0])->getValue());
-        // dump([$ref_entities[$i]->getEntityTypeId(), $entity->get($field_name[0])->getFieldDefinition()->getItemDefinition()->toArray()["settings"]["target_type"]]);
+    $arrayValue = count($fieldsList) ? $fieldsList : $newEntity->toArray();
+    $updatedValue = [];
+    // dd($entity->referencedEntities()[3]);
+    // dd($entity->referencedEntities()[3]->referencedEntities()[3]->getEntityType());
+    // dump($arrayValue);
+    foreach ($arrayValue as $field => $value) {
+      if ($entity instanceof \Drupal\webform\Entity\Webform) {
+        $newEntity->set("id", substr($entity->id(), 0, 10) . date('YMdi') . rand(0, 9999));
+        $newEntity->save();
+        break;
       }
-    }
-    foreach ($refs_values as $key => $value) {
-      $newEntity->set($key, $value);
-    }
+      if (array_key_exists($field, $arrayValue)) {
+        // dd($arrayValue);
+        if (gettype($entity->get($field)) != "object") {
+          // $newEntity->save();
 
-    // dd($refs_values, $newEntity->toArray());
-    $newEntity->save();
+          dd($arrayValue, $entity instanceof \Drupal\webform\Entity\Webform, $newEntity);
+          break;
+        }
+        // dump([$field, $entity->get($field)]);
+        $entity_type_id = $entity->get($field)->getFieldDefinition()->getItemDefinition()->toArray()["settings"]["target_type"];
+        if (isset($value[0]["target_id"]) && in_array($entity_type_id, $this->duplicable_entities_types)) {
+          $valueList = [];
+          foreach ($value as  $entity_id) {
+            $sub_entity = $this->entityTypeManager->getStorage($entity_type_id)->load($entity_id['target_id']);
+            if (isset($sub_entity)) {
+              $valueList[] = $this->duplicateEntity($sub_entity, true);
+              // $valueList[] = 7;
+            } else {
+              dd("error");
+            }
+            # code...
+          }
+          $newEntity->set($field, $valueList);
+        }
+      }
+      $newEntity->save();
+      // dd($newEntity);
+    }
     return $is_sub ? $newEntity->id() : $newEntity;
   }
 
@@ -132,7 +147,6 @@ class ContentDuplicatorController extends ControllerBase {
       foreach ($field as $field_item) {
         if (isset($field_item["target_id"]) && $entity_id == $field_item["target_id"]) {
           $result[] = $key;
-          break;
         }
       }
     }
