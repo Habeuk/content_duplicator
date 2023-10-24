@@ -1,8 +1,3 @@
-content_duplicator.content_type_page: # The first plugin ID
-  title: 'Duplicate'
-  route_name: content_duplicator.duplicate.node
-  base_route: entity.node.canonical
-  
 content_duplicator.entity_page: # The first plugin ID
   title: 'Duplicate'
   route_name: content_duplicator.duplicate.site
