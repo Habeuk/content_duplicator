@@ -27,9 +27,8 @@ class ContentDuplicatorRoutes {
         ], 
         // Route requirements:
         [
-          '_permission' => 'access content'
+          '_role' => 'administrator'
         ]);
-    // Add the route under the name 'example.content'.
     $route_collection->add('content_duplicator.duplicate.site', $route);
     return $route_collection;
   }
