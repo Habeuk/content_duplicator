@@ -74,7 +74,13 @@ class ContentDuplicatorController extends ControllerBase {
       $SiteTypeDatas->set('page_supplementaires', []);
       $SiteTypeDatas->set('is_home_page', false);
       $SiteTypeDatas->set('layout_paragraphs', $entity->get('layout_paragraphs')->getValue());
-      $newEntity = $this->DuplicateEntityReference->duplicateEntity($SiteTypeDatas);
+      $setValues = [];
+      if (\Drupal\lesroidelareno\lesroidelareno::getCurrentDomainId() !== 'wb_horizon_com')
+        $setValues = [
+          \Drupal\domain_access\DomainAccessManagerInterface::DOMAIN_ACCESS_FIELD => 'wb_horizon_com',
+          \Drupal\domain_source\DomainSourceElementManagerInterface::DOMAIN_SOURCE_FIELD => 'wb_horizon_com'
+        ];
+      $newEntity = $this->DuplicateEntityReference->duplicateEntity($SiteTypeDatas, false, [], $setValues);
       $destination = $newEntity->toUrl();
       return $this->redirect($destination->getRouteName(), $destination->getRouteParameters());
     }
