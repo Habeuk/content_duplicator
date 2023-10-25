@@ -1,3 +1,10 @@
 
 route_callbacks:
   - '\Drupal\content_duplicator\Routing\ContentDuplicatorRoutes::routes'
+content_duplicator.handler_duplicate:
+  path: '/content-duplicator/handler-duplicate'
+  defaults:
+    _title: 'Handler duplicate'
+    _form: 'Drupal\content_duplicator\Form\HandlerDuplicateForm'
+  requirements:
+    _permission: 'access content'

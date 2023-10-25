@@ -63,8 +63,19 @@ class ContentDuplicatorController extends ControllerBase {
      *
      * @var \Drupal\creation_site_virtuel\Entity\SiteInternetEntity $entity
      */
-    $entity = $this->entityTypeManager->getStorage('site_internet_entity')->load($site_internet_entity);
+    $entity = $this->entityTypeManager()->getStorage('site_internet_entity')->load($site_internet_entity);
     if ($entity) {
+      $ids = $entity->getModeleDePagesIds();
+      /**
+       * S'il existe deja des clones de cette page, on peut les mettre à jour et
+       * ou ajouter un nouveau.
+       */
+      if ($ids) {
+        $datas['site_internet_entity'] = $entity;
+        $datas['ids'] = $ids;
+        $form = \Drupal::formBuilder()->getForm(\Drupal\content_duplicator\Form\HandlerDuplicateForm::class, $datas);
+        return $form;
+      }
       $values = [
         'site_internet_entity_type' => $entity->bundle()
       ];
@@ -81,6 +92,10 @@ class ContentDuplicatorController extends ControllerBase {
           \Drupal\domain_source\DomainSourceElementManagerInterface::DOMAIN_SOURCE_FIELD => 'wb_horizon_com'
         ];
       $newEntity = $this->DuplicateEntityReference->duplicateEntity($SiteTypeDatas, false, [], $setValues);
+      
+      $ids[] = $newEntity->id();
+      $entity->set('entities_duplicate', $ids);
+      $entity->save();
       $destination = $newEntity->toUrl();
       return $this->redirect($destination->getRouteName(), $destination->getRouteParameters());
     }

@@ -1,0 +1,4 @@
+services:
+  content_duplicator.manager:
+    class: Drupal\content_duplicator\Services\Manager
+    arguments: ['@apivuejs.duplicate_reference']
