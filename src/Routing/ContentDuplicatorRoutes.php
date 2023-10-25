@@ -28,6 +28,10 @@ class ContentDuplicatorRoutes {
         // Route requirements:
         [
           '_role' => 'administrator'
+        ], 
+        // options
+        [
+          '_admin_route' => true
         ]);
     $route_collection->add('content_duplicator.duplicate.site', $route);
     return $route_collection;

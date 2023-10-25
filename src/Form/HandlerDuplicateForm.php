@@ -4,11 +4,32 @@ namespace Drupal\content_duplicator\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\content_duplicator\Services\Manager;
+use Drupal\Core\Url;
 
 /**
  * Provides a Content duplicator form.
  */
 class HandlerDuplicateForm extends FormBase {
+  
+  /**
+   *
+   * @var Manager
+   */
+  protected $managerDuplicate;
+  
+  function __construct(Manager $managerDuplicate) {
+    $this->managerDuplicate = $managerDuplicate;
+  }
+  
+  /**
+   *
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static($container->get('content_duplicator.manager'));
+  }
   
   /**
    *
@@ -39,18 +60,37 @@ class HandlerDuplicateForm extends FormBase {
     ];
     $form['add_clone'] = [
       '#type' => 'checkbox',
-      '#title' => 'ajouter un nouveau clone',
+      '#title' => 'Ajouter un nouveau clone',
       '#default' => true
     ];
     $options = [];
     foreach ($ids as $id) {
       $SiteTypeDatas = \Drupal\creation_site_virtuel\Entity\SiteTypeDatas::load($id);
-      if ($SiteTypeDatas)
-        $options[$id] = $SiteTypeDatas->getName();
+      if ($SiteTypeDatas) {
+        $link = [
+          '#type' => 'link',
+          '#title' => $SiteTypeDatas->id(),
+          '#url' => Url::fromRoute("entity.site_type_datas.canonical", [
+            'site_type_datas' => $SiteTypeDatas->id()
+          ]),
+          '#options' => [
+            'attributes' => [
+              'target' => '_blank',
+              'class' => []
+            ]
+          ]
+        ];
+        $options[$id] = [
+          '#type' => 'html_tag',
+          '#tag' => 'div',
+          '#value' => $SiteTypeDatas->getName() . ' | ',
+          $link
+        ];
+      }
     }
     $form['update_clones'] = [
       '#type' => 'checkboxes',
-      '#title' => 'Mettre à jour les clones',
+      '#title' => 'Selectionner les clones à mettre à jour',
       '#options' => $options
     ];
     
@@ -78,12 +118,16 @@ class HandlerDuplicateForm extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->messenger()->addStatus($this->t('The message has been sent.'));
+    $site_internet_entity = $form_state->get('site_internet_entity');
     $add_clone = $form_state->getValue('add_clone');
     $update_clones = $form_state->getValue('update_clones');
     if ($add_clone) {
-      //
+      $this->managerDuplicate->createClone($site_internet_entity->id());
     }
-    dd($update_clones, $add_clone);
+    foreach ($update_clones as $id) {
+      if ($id)
+        $this->managerDuplicate->updateClone($site_internet_entity, $id);
+    }
   }
   
 }

@@ -40,6 +40,7 @@ class Manager extends ControllerBase {
      */
     $entity = $this->entityTypeManager()->getStorage('site_internet_entity')->load($site_internet_entity);
     if ($entity) {
+      $ids = $entity->getModeleDePagesIds();
       if (!$SiteTypeDatas) {
         $values = [
           'site_internet_entity_type' => $entity->bundle()

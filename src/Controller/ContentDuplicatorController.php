@@ -66,6 +66,7 @@ class ContentDuplicatorController extends ControllerBase {
     $entity = $this->entityTypeManager()->getStorage('site_internet_entity')->load($site_internet_entity);
     if ($entity) {
       $ids = $entity->getModeleDePagesIds();
+      
       /**
        * S'il existe deja des clones de cette page, on peut les mettre à jour et
        * ou ajouter un nouveau.
