@@ -23,7 +23,7 @@ class ContentDuplicatorRoutes {
         // Route defaults:
         [
           '_controller' => '\Drupal\content_duplicator\Controller\ContentDuplicatorController::buildSite',
-          '_title' => 'Duplicate'
+          '_title' => 'Genere le model de page'
         ], 
         // Route requirements:
         [

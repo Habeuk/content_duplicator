@@ -53,6 +53,16 @@ class HandlerDuplicateForm extends FormBase {
     $ids = $buidlInfo['ids'];
     $form_state->set('site_internet_entity', $buidlInfo['site_internet_entity']);
     $form_state->set('ids', $ids);
+    $form['#title'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'div',
+      '#value' => 'Duplication : ',
+      [
+        '#type' => 'html_tag',
+        '#tag' => 'i',
+        '#value' => $site_internet_entity->getName()
+      ]
+    ];
     $form['header'] = [
       '#type' => 'html_tag',
       '#tag' => 'div',
@@ -126,7 +136,7 @@ class HandlerDuplicateForm extends FormBase {
     }
     foreach ($update_clones as $id) {
       if ($id)
-        $this->managerDuplicate->updateClone($site_internet_entity, $id);
+        $this->managerDuplicate->updateClone($site_internet_entity->id(), $id);
     }
   }
   

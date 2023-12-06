@@ -7,12 +7,18 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use PhpParser\Node\Expr\Instanceof_;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\apivuejs\Services\DuplicateEntityReference;
+use Drupal\content_duplicator\Services\Manager;
 
 /**
  * Returns responses for Content duplicator routes.
  */
 class ContentDuplicatorController extends ControllerBase {
+  
+  /**
+   *
+   * @var Manager
+   */
+  protected $managerDuplicate;
   
   /**
    * The entity type manager.
@@ -27,9 +33,9 @@ class ContentDuplicatorController extends ControllerBase {
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *        The entity type manager.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, DuplicateEntityReference $DuplicateEntityReference) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, Manager $managerDuplicate) {
     $this->entityTypeManager = $entity_type_manager;
-    $this->DuplicateEntityReference = $DuplicateEntityReference;
+    $this->managerDuplicate = $managerDuplicate;
   }
   
   /**
@@ -37,7 +43,7 @@ class ContentDuplicatorController extends ControllerBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    return new static($container->get('entity_type.manager'), $container->get('apivuejs.duplicate_reference'));
+    return new static($container->get('entity_type.manager'), $container->get('content_duplicator.manager'));
   }
   
   /**
@@ -66,7 +72,6 @@ class ContentDuplicatorController extends ControllerBase {
     $entity = $this->entityTypeManager()->getStorage('site_internet_entity')->load($site_internet_entity);
     if ($entity) {
       $ids = $entity->getModeleDePagesIds();
-      
       /**
        * S'il existe deja des clones de cette page, on peut les mettre à jour et
        * ou ajouter un nouveau.
@@ -77,30 +82,12 @@ class ContentDuplicatorController extends ControllerBase {
         $form = \Drupal::formBuilder()->getForm(\Drupal\content_duplicator\Form\HandlerDuplicateForm::class, $datas);
         return $form;
       }
-      $values = [
-        'site_internet_entity_type' => $entity->bundle()
-      ];
-      $SiteTypeDatas = \Drupal\creation_site_virtuel\Entity\SiteTypeDatas::create($values);
-      $SiteTypeDatas->set('name', $entity->getName() . ' clone : ' . $entity->id());
-      $SiteTypeDatas->set('name_menu', $entity->getName());
-      $SiteTypeDatas->set('page_supplementaires', []);
-      $SiteTypeDatas->set('is_home_page', false);
-      $SiteTypeDatas->set('layout_paragraphs', $entity->get('layout_paragraphs')->getValue());
-      $setValues = [];
-      if (\Drupal\lesroidelareno\lesroidelareno::getCurrentDomainId() !== 'wb_horizon_com')
-        $setValues = [
-          \Drupal\domain_access\DomainAccessManagerInterface::DOMAIN_ACCESS_FIELD => 'wb_horizon_com',
-          \Drupal\domain_source\DomainSourceElementManagerInterface::DOMAIN_SOURCE_FIELD => 'wb_horizon_com'
-        ];
-      $newEntity = $this->DuplicateEntityReference->duplicateEntity($SiteTypeDatas, false, [], $setValues);
-      
-      $ids[] = $newEntity->id();
-      $entity->set('entities_duplicate', $ids);
-      $entity->save();
-      $destination = $newEntity->toUrl();
-      return $this->redirect($destination->getRouteName(), $destination->getRouteParameters());
+      $newEntity = $this->managerDuplicate->createClone($site_internet_entity);
+      if ($newEntity) {
+        $destination = $newEntity->toUrl();
+        return $this->redirect($destination->getRouteName(), $destination->getRouteParameters());
+      }
     }
-    $this->messenger()->addError(" Une erreur s'est produite ");
     return [];
   }
   
