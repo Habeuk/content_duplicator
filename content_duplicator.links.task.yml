@@ -1,5 +1,5 @@
 content_duplicator.entity_page: # The first plugin ID
-  title: 'Duplicate'
+  title: 'Genere le model de page'
   route_name: content_duplicator.duplicate.site
   base_route: entity.site_internet_entity.canonical
   weight: 10
