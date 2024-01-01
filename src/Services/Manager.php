@@ -46,12 +46,11 @@ class Manager extends ControllerBase {
           'site_internet_entity_type' => $entity->bundle()
         ];
         $SiteTypeDatas = \Drupal\creation_site_virtuel\Entity\SiteTypeDatas::create($values);
+        $SiteTypeDatas->set('page_supplementaires', []);
+        $SiteTypeDatas->set('is_home_page', false);
       }
-      
       $SiteTypeDatas->set('name', $entity->getName() . ' clone : ' . $entity->id());
       $SiteTypeDatas->set('name_menu', $entity->getName());
-      $SiteTypeDatas->set('page_supplementaires', []);
-      $SiteTypeDatas->set('is_home_page', false);
       $SiteTypeDatas->set('layout_paragraphs', $entity->get('layout_paragraphs')->getValue());
       $setValues = [];
       if (\Drupal\lesroidelareno\lesroidelareno::getCurrentDomainId() !== 'wb_horizon_com')
