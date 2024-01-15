@@ -11,6 +11,6 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "habeuk/lesroidelareno": "dev-wbh"
+        "habeuk/lesroidelareno": "dev-wbh|^2.0.0"
     }
 }
