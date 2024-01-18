@@ -85,7 +85,7 @@ class ContentDuplicatorController extends ControllerBase {
       $newEntity = $this->managerDuplicate->createClone($site_internet_entity);
       if ($newEntity) {
         $this->messenger()->addStatus(" Le model de page a été generé, id : " . $newEntity->id());
-        $destination = $newEntity->toUrl();
+        $destination = $entity->toUrl();
         return $this->redirect($destination->getRouteName(), $destination->getRouteParameters());
       }
     }

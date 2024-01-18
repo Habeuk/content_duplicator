@@ -32,9 +32,10 @@ class Manager extends ControllerBase {
   }
   
   /**
+   * retorune le model de page qui a été dupliqué.
    *
    * @param int $site_internet_entity
-   * @return \Drupal\creation_site_virtuel\Entity\SiteInternetEntity
+   * @return \Drupal\creation_site_virtuel\Entity\SiteTypeDatas
    */
   function createClone(int $site_internet_entity, $ModeleDePage = null, $duplicate = true) {
     /**
@@ -83,7 +84,7 @@ class Manager extends ControllerBase {
         $entityToDuplicate->set('entities_duplicate', $ids);
         $entityToDuplicate->save();
       }
-      return $ModeleDePage;
+      return $newEntity;
     }
     $this->messenger()->addError(" Une erreur s'est produite ");
   }
@@ -111,9 +112,11 @@ class Manager extends ControllerBase {
   }
   
   /**
+   * Retourne le modele de page.
    *
    * @param int $site_internet_entity
    * @param int $SiteTypeDatas
+   * @return \Drupal\creation_site_virtuel\Entity\SiteTypeDatas
    */
   function updateClone(int $site_internet_entity, int $site_type_datas, bool $update_header = false, $update_footer = false) {
     $this->update_footer = $update_footer;
