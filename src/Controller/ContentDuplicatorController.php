@@ -74,7 +74,7 @@ class ContentDuplicatorController extends ControllerBase {
       $ids = $entity->getModeleDePagesIds();
       /**
        * S'il existe deja des clones de cette page, on peut les mettre à jour et
-       * ou ajouter un nouveau.
+       * ou les ajouter un nouveau.
        */
       if ($ids) {
         $datas['site_internet_entity'] = $entity;
@@ -84,6 +84,7 @@ class ContentDuplicatorController extends ControllerBase {
       }
       $newEntity = $this->managerDuplicate->createClone($site_internet_entity);
       if ($newEntity) {
+        $this->messenger()->addStatus(" Le model de page a été generé, id : " . $newEntity->id());
         $destination = $newEntity->toUrl();
         return $this->redirect($destination->getRouteName(), $destination->getRouteParameters());
       }

@@ -4,6 +4,7 @@ namespace Drupal\content_duplicator\Services;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\apivuejs\Services\DuplicateEntityReference;
+use Drupal\lesroidelareno\lesroidelareno;
 
 /**
  *
@@ -11,6 +12,8 @@ use Drupal\apivuejs\Services\DuplicateEntityReference;
  *        
  */
 class Manager extends ControllerBase {
+  protected $update_header = false;
+  protected $update_footer = false;
   
   /**
    *
@@ -33,39 +36,78 @@ class Manager extends ControllerBase {
    * @param int $site_internet_entity
    * @return \Drupal\creation_site_virtuel\Entity\SiteInternetEntity
    */
-  function createClone(int $site_internet_entity, $SiteTypeDatas = null, $duplicate = true) {
+  function createClone(int $site_internet_entity, $ModeleDePage = null, $duplicate = true) {
     /**
+     * La page à dupliquer.
      *
-     * @var \Drupal\creation_site_virtuel\Entity\SiteInternetEntity $entity
+     * @var \Drupal\creation_site_virtuel\Entity\SiteInternetEntity $entityToDuplicate
      */
-    $entity = $this->entityTypeManager()->getStorage('site_internet_entity')->load($site_internet_entity);
-    if ($entity) {
-      $ids = $entity->getModeleDePagesIds();
-      if (!$SiteTypeDatas) {
+    $entityToDuplicate = $this->entityTypeManager()->getStorage('site_internet_entity')->load($site_internet_entity);
+    if ($entityToDuplicate) {
+      $ids = $entityToDuplicate->getModeleDePagesIds();
+      $HomePage = $entityToDuplicate->isHomePage();
+      if (!$ModeleDePage) {
         $values = [
-          'site_internet_entity_type' => $entity->bundle()
+          'site_internet_entity_type' => $entityToDuplicate->bundle()
         ];
-        $SiteTypeDatas = \Drupal\creation_site_virtuel\Entity\SiteTypeDatas::create($values);
-        $SiteTypeDatas->set('page_supplementaires', []);
-        $SiteTypeDatas->set('is_home_page', false);
+        $ModeleDePage = \Drupal\creation_site_virtuel\Entity\SiteTypeDatas::create($values);
+        $ModeleDePage->set('page_supplementaires', []);
+        $ModeleDePage->set('is_home_page', $HomePage);
+        // si cest la premiere generation d'une page d'accueil, on ajoute
+        // egalement l'entete et le pied de page.
+        if ($HomePage) {
+          if ($id_header = $this->getParagraphHeaderFooter('top_header'))
+            $ModeleDePage->set('entete_paragraph', $id_header);
+          if ($id_footer = $this->getParagraphHeaderFooter('footer'))
+            $ModeleDePage->set('footer_paragraph', $id_footer);
+        }
       }
-      $SiteTypeDatas->set('name', $entity->getName() . ' clone : ' . $entity->id());
-      $SiteTypeDatas->set('name_menu', $entity->getName());
-      $SiteTypeDatas->set('layout_paragraphs', $entity->get('layout_paragraphs')->getValue());
+      if ($HomePage) {
+        if ($id_header = $this->getParagraphHeaderFooter('top_header') && $this->update_header)
+          $ModeleDePage->set('entete_paragraph', $id_header);
+        if ($id_footer = $this->getParagraphHeaderFooter('footer') && $this->update_footer)
+          $ModeleDePage->set('footer_paragraph', $id_footer);
+      }
+      $ModeleDePage->set('name', $entityToDuplicate->getName() . ' clone : ' . $entityToDuplicate->id());
+      $ModeleDePage->set('name_menu', $entityToDuplicate->getName());
+      $ModeleDePage->set('layout_paragraphs', $entityToDuplicate->get('layout_paragraphs')->getValue());
       $setValues = [];
       if (\Drupal\lesroidelareno\lesroidelareno::getCurrentDomainId() !== 'wb_horizon_com')
         $setValues = [
           \Drupal\domain_access\DomainAccessManagerInterface::DOMAIN_ACCESS_FIELD => 'wb_horizon_com',
           \Drupal\domain_source\DomainSourceElementManagerInterface::DOMAIN_SOURCE_FIELD => 'wb_horizon_com'
         ];
-      $newEntity = $this->DuplicateEntityReference->duplicateEntity($SiteTypeDatas, false, [], $setValues, $duplicate);
-      
-      $ids[] = $newEntity->id();
-      $entity->set('entities_duplicate', $ids);
-      $entity->save();
-      return $entity;
+      $newEntity = $this->DuplicateEntityReference->duplicateEntity($ModeleDePage, false, [], $setValues, $duplicate);
+      if (!in_array($newEntity->id(), $ids)) {
+        $ids[] = $newEntity->id();
+        $entityToDuplicate->set('entities_duplicate', $ids);
+        $entityToDuplicate->save();
+      }
+      return $ModeleDePage;
     }
     $this->messenger()->addError(" Une erreur s'est produite ");
+  }
+  
+  /**
+   * Permet de recuperer l'entete ou le footer du site.
+   */
+  protected function getParagraphHeaderFooter(string $region) {
+    $query = $this->entityTypeManager()->getStorage('block')->getQuery();
+    $query->accessCheck(TRUE);
+    $query->condition('theme', lesroidelareno::getCurrentDomainId());
+    $query->condition('region', $region);
+    $query->condition('provider', 'entity_block');
+    $query->condition('plugin', 'entity_block:paragraph');
+    $query->condition('status', true);
+    $ids = $query->execute();
+    if ($ids) {
+      $block = \Drupal\block\Entity\Block::load(reset($ids));
+      if ($block) {
+        $settings = $block->get('settings');
+        return !empty($settings['entity']) ? $settings['entity'] : NULL;
+      }
+    }
+    return NULL;
   }
   
   /**
@@ -73,7 +115,9 @@ class Manager extends ControllerBase {
    * @param int $site_internet_entity
    * @param int $SiteTypeDatas
    */
-  function updateClone(int $site_internet_entity, int $site_type_datas) {
+  function updateClone(int $site_internet_entity, int $site_type_datas, bool $update_header = false, $update_footer = false) {
+    $this->update_footer = $update_footer;
+    $this->update_header = $update_header;
     /**
      *
      * @var \Drupal\creation_site_virtuel\Entity\SiteInternetEntity $SiteInternetEntity

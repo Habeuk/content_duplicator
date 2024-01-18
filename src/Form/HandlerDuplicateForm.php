@@ -71,7 +71,7 @@ class HandlerDuplicateForm extends FormBase {
     $form['add_clone'] = [
       '#type' => 'checkbox',
       '#title' => 'Ajouter un nouveau clone',
-      '#default' => true
+      '#default_value' => false
     ];
     $options = [];
     foreach ($ids as $id) {
@@ -98,11 +98,30 @@ class HandlerDuplicateForm extends FormBase {
         ];
       }
     }
-    $form['update_clones'] = [
+    $form['update_entities'] = [
+      '#type' => 'details',
+      '#title' => 'Mise à jour',
+      '#open' => true
+    ];
+    $form['update_entities']['update_clones'] = [
       '#type' => 'checkboxes',
       '#title' => 'Selectionner les clones à mettre à jour',
       '#options' => $options
     ];
+    if ($site_internet_entity->isHomePage()) {
+      $form['update_entities']['update_header'] = [
+        '#type' => 'checkbox',
+        '#title' => "Mettre à jour l'entete",
+        '#description' => "Fonctionne dans le cadre de la mise à jour",
+        '#default_value' => 1
+      ];
+      $form['update_entities']['update_footer'] = [
+        '#type' => 'checkbox',
+        '#title' => "Mettre à jour le pied de page",
+        '#description' => "Fonctionne dans le cadre de la mise à jour",
+        '#default_value' => 1
+      ];
+    }
     
     $form['actions'] = [
       '#type' => 'actions'
@@ -127,16 +146,23 @@ class HandlerDuplicateForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->messenger()->addStatus($this->t('The message has been sent.'));
     $site_internet_entity = $form_state->get('site_internet_entity');
     $add_clone = $form_state->getValue('add_clone');
     $update_clones = $form_state->getValue('update_clones');
     if ($add_clone) {
-      $this->managerDuplicate->createClone($site_internet_entity->id());
+      $ModeleDePage = $this->managerDuplicate->createClone($site_internet_entity->id());
+      if ($ModeleDePage)
+        $this->messenger()->addStatus("Un nouveau model de page a été creer " . $ModeleDePage->id());
     }
-    foreach ($update_clones as $id) {
-      if ($id)
-        $this->managerDuplicate->updateClone($site_internet_entity->id(), $id);
+    if ($update_clones) {
+      $update_header = (bool) $form_state->getValue('update_header');
+      $update_footer = (bool) $form_state->getValue('update_footer');
+      foreach ($update_clones as $id) {
+        if ($id) {
+          $this->managerDuplicate->updateClone($site_internet_entity->id(), $id, $update_header, $update_footer);
+          $this->messenger()->addStatus(" Model de page $id Mise à jour");
+        }
+      }
     }
   }
   
