@@ -64,10 +64,12 @@ class Manager extends ControllerBase {
         }
       }
       if ($HomePage) {
-        if ($id_header = $this->getParagraphHeaderFooter('top_header') && $this->update_header)
+        if ($this->update_header && $id_header = $this->getParagraphHeaderFooter('top_header')) {
           $ModeleDePage->set('entete_paragraph', $id_header);
-        if ($id_footer = $this->getParagraphHeaderFooter('footer') && $this->update_footer)
+        }
+        if ($this->update_footer && $id_footer = $this->getParagraphHeaderFooter('footer')) {
           $ModeleDePage->set('footer_paragraph', $id_footer);
+        }
       }
       $ModeleDePage->set('name', $entityToDuplicate->getName() . ' clone : ' . $entityToDuplicate->id());
       $ModeleDePage->set('name_menu', $entityToDuplicate->getName());
