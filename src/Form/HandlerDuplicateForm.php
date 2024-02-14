@@ -159,8 +159,9 @@ class HandlerDuplicateForm extends FormBase {
       $update_footer = (bool) $form_state->getValue('update_footer');
       foreach ($update_clones as $id) {
         if ($id) {
-          $this->managerDuplicate->updateClone($site_internet_entity->id(), $id, $update_header, $update_footer);
-          $this->messenger()->addStatus(" Model de page $id Mise à jour");
+          $entity = $this->managerDuplicate->updateClone($site_internet_entity->id(), $id, $update_header, $update_footer);
+          if ($entity)
+            $this->messenger()->addStatus(" Model de page $id Mise à jour");
         }
       }
     }

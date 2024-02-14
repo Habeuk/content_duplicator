@@ -19,7 +19,7 @@ class ContentDuplicatorRoutes {
     $route_collection = new RouteCollection();
     $route = new Route(
         // Path to attach this route to:
-        '/content-duplicator/{site_internet_entity}/duplicate-site', 
+        '/content-duplicator/{site_internet_entity}/generate-model-page', 
         // Route defaults:
         [
           '_controller' => '\Drupal\content_duplicator\Controller\ContentDuplicatorController::buildSite',
