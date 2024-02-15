@@ -161,8 +161,9 @@ class Manager extends ControllerBase {
       catch (\Exception $e) {
         $this->messenger()->addError($e->getMessage());
       }
+      // dd($SiteInternetEntity, $SiteTypeDatas);
     }
-    $this->messenger()->addError(" Une erreur s'est produite ");
+    $this->messenger()->addError(" Une erreur s'est produite ...");
     return false;
   }
   
@@ -180,7 +181,7 @@ class Manager extends ControllerBase {
     if ($EntityTypeId == 'webform') {
       $entity_domain_access = $entity->getThirdPartySetting('webform_domain_access', $this->field_domain_access);
       if ($entity_domain_access !== self::domain_base) {
-        throw new \Exception("Le domaine de formulaire est different: " . $entity->id() . '; ' . $entity_domain_access . ' !== ' . self::domain_base);
+        throw new \Exception("Le domaine de l'entité $EntityTypeId : " . $entity->id() . " est different: " . $entity_domain_access . ' !== ' . self::domain_base);
       }
     }
     elseif ($entity instanceof ContentEntityBase) {
@@ -191,7 +192,7 @@ class Manager extends ControllerBase {
       if (in_array($EntityTypeId, $this->DuplicateEntityReference->getDuplicableEntitiesTypes())) {
         $entity_domain_access = $entity->get($this->field_domain_access)->target_id;
         if ($entity_domain_access !== self::domain_base) {
-          throw new \Exception("Le domaine de formulaire est different: " . $entity->id() . '; ' . $entity_domain_access . ' !== ' . self::domain_base);
+          throw new \Exception("Le domaine de l'entité $EntityTypeId : " . $entity->id() . " est different: " . $entity_domain_access . ' !== ' . self::domain_base);
         }
       }
       foreach ($arrayValue as $field_name => $value) {
