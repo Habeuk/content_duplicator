@@ -90,6 +90,7 @@ class Manager extends ControllerBase {
       $ModeleDePage->set('name', $entityToDuplicate->getName() . ' clone : ' . $entityToDuplicate->id());
       $ModeleDePage->set('name_menu', $entityToDuplicate->getName());
       $ModeleDePage->set('layout_paragraphs', $entityToDuplicate->get('layout_paragraphs')->getValue());
+      $ModeleDePage->set('hbk_collection', $entityToDuplicate->get('hbk_collection')->getValue());
       $setValues = [];
       if (\Drupal\lesroidelareno\lesroidelareno::getCurrentDomainId() !== self::domain_base)
         $setValues = [
