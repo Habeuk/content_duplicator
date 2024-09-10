@@ -24,7 +24,7 @@ class Manager extends ControllerBase {
    * --
    */
   protected $field_domain_sources = \Drupal\domain_source\DomainSourceElementManagerInterface::DOMAIN_SOURCE_FIELD;
-  
+
   /**
    *
    * @var DuplicateEntityReference
@@ -36,7 +36,7 @@ class Manager extends ControllerBase {
    * @var string
    */
   protected const domain_base = "wb_horizon_com";
-  
+
   /**
    * The controller constructor.
    *
@@ -46,7 +46,18 @@ class Manager extends ControllerBase {
   public function __construct(DuplicateEntityReference $DuplicateEntityReference) {
     $this->DuplicateEntityReference = $DuplicateEntityReference;
   }
-  
+
+  /**
+   * @var \Drupal\creation_site_virtuel\Entity\SiteTypeDatas $siteModel
+   * @var \Drupal\creation_site_virtuel\Entity\SiteInternetEntity $source
+   */
+  protected function setSiteInternetValues(&$siteModel, &$source) {
+    $siteModel->set('name', $source->getName() . ' clone : ' . $source->id());
+    $siteModel->set('name_menu', $source->getName());
+    $siteModel->set('layout_paragraphs', $source->get('layout_paragraphs')->getValue());
+    $siteModel->set('hbk_collection', $source->get('hbk_collection')->getValue());
+  }
+
   /**
    * retorune le model de page qui a été dupliqué.
    *
@@ -54,12 +65,18 @@ class Manager extends ControllerBase {
    * @return \Drupal\creation_site_virtuel\Entity\SiteTypeDatas
    */
   function createClone(int $site_internet_entity, $ModeleDePage = null, $duplicate = true) {
+    if (empty($availableLanguages)) {
+      $availableLanguages = array_keys(\Drupal::languageManager()->getNativeLanguages());
+    }
+
     /**
      * La page à dupliquer.
      *
      * @var \Drupal\creation_site_virtuel\Entity\SiteInternetEntity $entityToDuplicate
      */
+
     $entityToDuplicate = $this->entityTypeManager()->getStorage('site_internet_entity')->load($site_internet_entity);
+    // dd($entityToDuplicate->language()->getId());
     if ($entityToDuplicate) {
       $ids = $entityToDuplicate->getModeleDePagesIds();
       $HomePage = $entityToDuplicate->isHomePage();
@@ -87,10 +104,27 @@ class Manager extends ControllerBase {
           $ModeleDePage->set('footer_paragraph', $id_footer);
         }
       }
-      $ModeleDePage->set('name', $entityToDuplicate->getName() . ' clone : ' . $entityToDuplicate->id());
-      $ModeleDePage->set('name_menu', $entityToDuplicate->getName());
-      $ModeleDePage->set('layout_paragraphs', $entityToDuplicate->get('layout_paragraphs')->getValue());
-      $ModeleDePage->set('hbk_collection', $entityToDuplicate->get('hbk_collection')->getValue());
+      $this->setSiteInternetValues($ModeleDePage, $entityToDuplicate);
+
+      $defaultLangcode = $entityToDuplicate->language()->getId();
+      $entityLanguages = $entityToDuplicate->getTranslationLanguages();
+      unset($entityLanguages[$defaultLangcode]);
+
+      $entityLangcodes = array_keys($entityLanguages);
+      try {
+        //code...
+        foreach ($entityLangcodes as $langcode) {
+          if ($entityToDuplicate->hasTranslation($langcode)) {
+            $translationSource = $entityToDuplicate->getTranslation($langcode);
+            $translationDestination = $ModeleDePage->hasTranslation($langcode)
+              ? $ModeleDePage->getTranslation($langcode)
+              : $ModeleDePage->addTranslation($langcode);
+            $this->setSiteInternetValues($translationDestination, $translationSource);
+          }
+        }
+      } catch (\Throwable $th) {
+        dd($th);
+      }
       $setValues = [];
       if (\Drupal\lesroidelareno\lesroidelareno::getCurrentDomainId() !== self::domain_base)
         $setValues = [
@@ -107,7 +141,7 @@ class Manager extends ControllerBase {
     }
     $this->messenger()->addError(" Une erreur s'est produite ");
   }
-  
+
   /**
    * Permet de recuperer l'entete ou le footer du site.
    */
@@ -129,7 +163,7 @@ class Manager extends ControllerBase {
     }
     return NULL;
   }
-  
+
   /**
    * Retourne le modele de page.
    *
@@ -158,8 +192,7 @@ class Manager extends ControllerBase {
         $this->VerificationAvantSuppression($SiteTypeDatas);
         $this->DuplicateEntityReference->deleteSubEntity($SiteTypeDatas);
         return $this->createClone($site_internet_entity, $SiteTypeDatas, false);
-      }
-      catch (\Exception $e) {
+      } catch (\Exception $e) {
         $this->messenger()->addError($e->getMessage());
       }
       // dd($SiteInternetEntity, $SiteTypeDatas);
@@ -167,7 +200,7 @@ class Manager extends ControllerBase {
     $this->messenger()->addError(" Une erreur s'est produite ...");
     return false;
   }
-  
+
   /**
    * On doit pouvoir supprimer (dans ce cas de figure uniquement) les entities
    * qui porte le domaine wb_horizon_com, car cela garantie que l'entité a été
@@ -184,8 +217,7 @@ class Manager extends ControllerBase {
       if ($entity_domain_access !== self::domain_base) {
         throw new \Exception("Le domaine de l'entité $EntityTypeId : " . $entity->id() . " est different: " . $entity_domain_access . ' !== ' . self::domain_base);
       }
-    }
-    elseif ($entity instanceof ContentEntityBase) {
+    } elseif ($entity instanceof ContentEntityBase) {
       $arrayValue = $fieldsList ? $fieldsList : $entity->toArray();
       // si l'entité ne fait pas partie des elements à dupliqué, on l'ignore et
       // on regarde s'il a des entites enfants.
@@ -213,5 +245,4 @@ class Manager extends ControllerBase {
       }
     }
   }
-  
 }
